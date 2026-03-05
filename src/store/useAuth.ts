@@ -34,11 +34,15 @@ export const useAuth = create<AuthStore>((set, get) => ({
             const { data: { session } } = await supabase.auth.getSession();
 
             if (session) {
-                const { data: profile } = await supabase
+                console.log('Session found for user:', session.user.id);
+                const { data: profile, error } = await supabase
                     .from('users')
                     .select('*')
                     .eq('id', session.user.id)
-                    .single();
+                    .maybeSingle();
+
+                if (error) console.error('Error fetching profile:', error);
+                if (!profile) console.warn('No profile found for user in public.users table');
 
                 set({ session, user: session.user, profile, loading: false, initialized: true });
             } else {
@@ -48,11 +52,13 @@ export const useAuth = create<AuthStore>((set, get) => ({
             // Listen for auth changes
             supabase.auth.onAuthStateChange(async (_event, session) => {
                 if (session) {
-                    const { data: profile } = await supabase
+                    const { data: profile, error } = await supabase
                         .from('users')
                         .select('*')
                         .eq('id', session.user.id)
-                        .single();
+                        .maybeSingle();
+
+                    if (error) console.error('Error fetching profile on auth change:', error);
                     set({ session, user: session.user, profile, loading: false });
                 } else {
                     set({ session: null, user: null, profile: null, loading: false });
