@@ -42,9 +42,24 @@ export const useAuth = create<AuthStore>((set, get) => ({
                     .maybeSingle();
 
                 if (error) console.error('Error fetching profile:', error);
-                if (!profile) console.warn('No profile found for user in public.users table');
 
-                set({ session, user: session.user, profile, loading: false, initialized: true });
+                if (!profile) {
+                    console.warn('No profile found for user in public.users. Using fallback.');
+                    set({
+                        session,
+                        user: session.user,
+                        profile: {
+                            id: session.user.id,
+                            full_name: session.user.user_metadata?.full_name || 'User',
+                            role: 'client',
+                            phone: null
+                        },
+                        loading: false,
+                        initialized: true
+                    });
+                } else {
+                    set({ session, user: session.user, profile, loading: false, initialized: true });
+                }
             } else {
                 set({ session: null, user: null, profile: null, loading: false, initialized: true });
             }
@@ -59,7 +74,18 @@ export const useAuth = create<AuthStore>((set, get) => ({
                         .maybeSingle();
 
                     if (error) console.error('Error fetching profile on auth change:', error);
-                    set({ session, user: session.user, profile, loading: false });
+
+                    set({
+                        session,
+                        user: session.user,
+                        profile: profile || {
+                            id: session.user.id,
+                            full_name: session.user.user_metadata?.full_name || 'User',
+                            role: 'client',
+                            phone: null
+                        },
+                        loading: false
+                    });
                 } else {
                     set({ session: null, user: null, profile: null, loading: false });
                 }
